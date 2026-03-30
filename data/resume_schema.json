@@ -1,0 +1,76 @@
+{
+  "name": "Gnyani Enugandula",
+  "summary": "Data engineer with experience building scalable pipelines, analytics models, and reliable cloud data platforms for product and business stakeholders.",
+  "skills": {
+    "Languages": [
+      "Python",
+      "SQL",
+      "Java",
+      "Bash"
+    ],
+    "Frameworks": [
+      "Airflow",
+      "dbt",
+      "Spark",
+      "FastAPI"
+    ],
+    "Cloud": [
+      "AWS",
+      "Snowflake",
+      "Redshift",
+      "S3"
+    ],
+    "Tools": [
+      "Git",
+      "Docker",
+      "Terraform",
+      "Tableau"
+    ]
+  },
+  "experience": [
+    {
+      "role": "Senior Data Engineer",
+      "company": "Northstar Analytics",
+      "dates": "2023 - Present",
+      "bullets": [
+        "Built batch and streaming pipelines in Python and Spark that processed 120M events daily into Snowflake models.",
+        "Designed Airflow orchestration and alerting that cut failed pipeline recovery time by 45%.",
+        "Partnered with analytics and finance stakeholders to define trusted KPI datasets and improve executive reporting."
+      ]
+    },
+    {
+      "role": "Data Engineer Intern",
+      "company": "Acmesia Labs",
+      "dates": "2022 - 2023",
+      "bullets": [
+        "Developed SQL transformations and quality checks for customer and product data used in weekly business reviews.",
+        "Automated ingestion from partner APIs into S3 and Redshift, reducing manual analyst work by 12 hours per week."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "M.S. Computer Science",
+      "institution": "State University",
+      "dates": "2023"
+    },
+    {
+      "degree": "B.Tech. Information Technology",
+      "institution": "City Engineering College",
+      "dates": "2021"
+    }
+  ],
+  "projects": [
+    {
+      "name": "Real-Time Metrics Platform",
+      "bullets": [
+        "Built a Kafka and Spark streaming project that surfaced customer behavior metrics within five minutes.",
+        "Created dimensional warehouse models and dashboards for product teams to track conversion performance."
+      ]
+    }
+  ],
+  "certifications": [
+    "AWS Certified Data Analytics - Specialty",
+    "dbt Fundamentals"
+  ]
+}

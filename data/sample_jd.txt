@@ -1,0 +1,27 @@
+Senior Data Engineer
+at Meridian Loop
+
+Meridian Loop is building a modern data platform that powers customer intelligence, product analytics, and operational reporting for a fast-growing B2B software business. We are looking for a Senior Data Engineer who can design reliable pipelines, model clean datasets, and partner closely with analytics, product, and business teams.
+
+Responsibilities
+- Build and maintain scalable batch and streaming data pipelines that ingest data from application databases, third-party APIs, and event streams.
+- Design, implement, and optimize ELT workflows using Python, SQL, and orchestration frameworks such as Airflow.
+- Develop dimensional models and curated warehouse tables that support product analytics, finance reporting, and executive dashboards.
+- Improve data quality, observability, and operational excellence through testing, alerting, documentation, and root-cause analysis.
+- Collaborate with analysts, software engineers, and business stakeholders to translate ambiguous requirements into trusted datasets and self-service data products.
+- Contribute to platform architecture decisions involving AWS, Snowflake, data lake storage, and CI/CD practices.
+
+Requirements
+- 5+ years of experience building production-grade data pipelines and warehouse models.
+- Strong proficiency in Python and SQL for transformation, automation, and data processing.
+- Hands-on experience with Airflow or similar orchestration tools in production environments.
+- Experience working with cloud data platforms such as AWS, Snowflake, Redshift, or Databricks.
+- Familiarity with distributed processing technologies such as Spark or Flink.
+- Demonstrated ability to improve data reliability, monitoring, and pipeline performance.
+- Ability to communicate clearly with technical and non-technical stakeholders.
+
+Preferred Qualifications
+- Experience supporting product analytics or SaaS business intelligence use cases.
+- Familiarity with dbt, Terraform, or infrastructure-as-code workflows.
+- Experience designing data quality frameworks and automated validation checks.
+- Comfortable mentoring junior engineers and driving best practices across the data stack.

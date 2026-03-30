@@ -1,0 +1,10 @@
+openai
+python-dotenv
+python-docx
+numpy
+argparse
+fastapi
+uvicorn[standard]
+lxml
+playwright
+requests

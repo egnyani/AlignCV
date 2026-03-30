@@ -1,0 +1,15 @@
+{
+  "name": "semantic-profile-optimizer",
+  "private": true,
+  "scripts": {
+    "generate:resume-pdf": "tsx resume_export/exportPdf.ts"
+  },
+  "dependencies": {
+    "@sparticuz/chromium": "^143.0.4",
+    "puppeteer-core": "^24.40.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

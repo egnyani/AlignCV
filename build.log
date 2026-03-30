@@ -1,0 +1,252 @@
+[2026-03-17 10:00:00] CREATED  config.py  — added environment-based API configuration and pipeline constants
+[2026-03-17 10:00:01] CREATED  requirements.txt  — added Python dependencies for the CLI and pipeline
+[2026-03-17 10:00:02] CREATED  pipeline/__init__.py  — initialized the pipeline package
+[2026-03-17 10:00:03] CREATED  pipeline/parser.py  — added DOCX resume parsing with section handling and JSON export helpers
+[2026-03-17 10:00:04] CREATED  pipeline/jd_extractor.py  — added Claude and heuristic JD requirement extraction
+[2026-03-17 10:00:05] CREATED  pipeline/embedder.py  — added OpenAI embedding support for resume and JD text
+[2026-03-17 10:00:06] CREATED  pipeline/scorer.py  — added cosine similarity scoring and weak-bullet detection
+[2026-03-17 10:00:07] CREATED  pipeline/rewriter.py  — added Claude-based bullet rewriting for weak resume bullets
+[2026-03-17 10:00:08] CREATED  pipeline/builder.py  — added DOCX rebuild logic, filename generation, and one-page trimming
+[2026-03-17 10:00:09] CREATED  pipeline/reporter.py  — added markdown report generation and persistence
+[2026-03-17 10:00:10] CREATED  main.py  — added CLI orchestration for parsing, extraction, embedding, scoring, rewriting, building, and reporting
+[2026-03-17 10:00:11] CREATED  data/resume_schema.json  — added reference resume JSON for testing and sample generation
+[2026-03-17 10:00:12] CREATED  data/sample_jd.txt  — added a realistic senior data engineer sample job description
+[2026-03-17 10:00:13] CREATED  scripts/create_sample_resume.py  — added script to generate a sample resume DOCX
+[2026-03-17 10:00:14] CREATED  data/sample_resume.docx  — generated an initial sample resume for smoke testing
+[2026-03-17 10:00:15] CREATED  build_log_utils.py  — added append-only build log helpers for file and run audit events
+[2026-03-17 10:00:16] CREATED  scripts/create_template_docx.py  — added script to generate the base template DOCX
+[2026-03-17 10:00:17] MODIFIED pipeline/parser.py  — tightened section-heading detection around tabbed role lines and added builder delegation plus JSON logging
+[2026-03-17 10:00:18] MODIFIED pipeline/embedder.py  — added deterministic local embeddings for dry runs without token spend
+[2026-03-17 10:00:19] MODIFIED pipeline/builder.py  — switched skills rebuilding to per-category rows and refined one-page trimming order
+[2026-03-17 10:00:20] MODIFIED pipeline/reporter.py  — added build-log entries when reports are saved
+[2026-03-17 10:00:21] MODIFIED main.py  — added build-log run/file auditing and dry-run local embedding support
+[2026-03-17 10:00:22] MODIFIED scripts/create_sample_resume.py  — fixed root imports, skills formatting, and sample generation logging
+[2026-03-17 11:36:54] CREATED  templates/resume_template.docx  — Generated base DOCX template with required margins
+[2026-03-17 11:36:54] MODIFIED data/sample_resume.docx  — Generated sample resume DOCX for smoke testing
+[2026-03-17 11:36:59] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --output outputs/test_output.docx --dry-run --verbose  — Pipeline started
+[2026-03-17 11:36:59] CREATED  outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 11:36:59] CREATED  outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 11:36:59] CREATED  outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 11:36:59] CREATED  outputs/report_20260317_113659.md  — Saved markdown resume match report
+[2026-03-17 11:36:59] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --output outputs/test_output.docx --dry-run --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_113659.md
+[2026-03-17 11:45:00] MODIFIED config.py  — replaced Anthropic settings with Groq API configuration and Groq rewrite model
+[2026-03-17 11:45:01] MODIFIED pipeline/jd_extractor.py  — migrated JD extraction and company-role parsing from Anthropic to Groq via OpenAI SDK
+[2026-03-17 11:45:02] MODIFIED pipeline/rewriter.py  — migrated bullet rewriting from Anthropic to Groq via OpenAI SDK
+[2026-03-17 11:45:03] MODIFIED requirements.txt  — removed anthropic dependency because Groq uses the OpenAI SDK
+[2026-03-17 11:45:04] MODIFIED pipeline/jd_extractor.py  — hardened JSON parsing for Groq responses that include fenced code blocks
+[2026-03-17 12:08:00] MODIFIED pipeline/rewriter.py  — stripped leading model bullet markers from Groq rewrite responses before DOCX rebuild
+[2026-03-17 12:07:31] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:07:31] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:07:32] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:07:36] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:07:37] CREATED  outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 12:07:39] CREATED  outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:07:39] CREATED  outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 12:07:39] CREATED  outputs/report_20260317_120739.md  — Saved markdown resume match report
+[2026-03-17 12:07:39] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_120739.md
+[2026-03-17 12:08:06] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:08:06] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:08:07] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:08:11] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:08:12] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 12:08:15] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:08:15] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 12:08:15] CREATED  outputs/report_20260317_120815.md  — Saved markdown resume match report
+[2026-03-17 12:08:15] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_120815.md
+[2026-03-17 12:08:27] RUN      main.py --resume /mnt/user-data/uploads/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Requested uploaded resume path was not present locally; validated live pipeline with data/sample_resume.docx instead
+[2026-03-17 12:30:00] MODIFIED requirements.txt  — added python-dotenv for loading secrets from .env files
+[2026-03-17 12:30:01] MODIFIED main.py  — load .env before local pipeline imports so API settings come from environment
+[2026-03-17 12:30:02] MODIFIED pipeline/rewriter.py  — added fact-anchor verification and second-pass restoration to preserve original tools, names, and metrics
+[2026-03-17 12:30:03] CREATED  .gitignore  — ignored .env so local secrets stay out of version control
+[2026-03-17 12:31:00] CREATED  .env  — added local environment variables for Groq and OpenAI runtime access
+[2026-03-17 12:40:00] MODIFIED config.py  — replaced Groq runtime settings with local Ollama OpenAI-compatible configuration
+[2026-03-17 12:40:01] MODIFIED pipeline/jd_extractor.py  — migrated JD extraction and company-role parsing from Groq to local Ollama
+[2026-03-17 12:40:02] MODIFIED pipeline/rewriter.py  — migrated bullet rewriting from Groq to local Ollama while keeping fact-preservation checks
+[2026-03-17 12:52:00] MODIFIED pipeline/parser.py  — fixed visible name extraction and paired company lines with following role lines in the real resume format
+[2026-03-17 12:52:01] MODIFIED pipeline/builder.py  — aligned section order, title style, bullet style, borders, spacing, and role/company line formatting to the original resume
+[2026-03-17 12:54:00] MODIFIED pipeline/parser.py  — joined project bullet continuation lines instead of creating a fake extra project entry
+[2026-03-18 09:00:00] MODIFIED api.py  — replaced the hard stop for JS-rendered job URLs with a browser-rendered Playwright fallback
+[2026-03-18 09:00:01] MODIFIED requirements.txt  — added Playwright Python dependency for browser-based URL extraction
+[2026-03-18 09:00:02] MODIFIED frontend.html  — updated the URL input note to explain the automatic browser-rendered fallback
+[2026-03-18 09:10:00] MODIFIED api.py  — stopped forcing Playwright for known JS job-board domains when the static fetch already returns enough text
+[2026-03-17 12:17:13] MODIFIED pipeline/rewriter.py  — Strengthened Groq rewrite prompt to mirror all JD requirements and exact JD terminology
+[2026-03-17 12:17:13] MODIFIED config.py  — Lowered similarity threshold to 0.55 and raised rewrite cap to 15 for more aggressive tailoring
+[2026-03-17 12:17:24] CREATED  data/Gnyani_Resume_Final__2_.docx  — Copied actual resume into project data path for live pipeline runs
+[2026-03-17 12:17:34] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:17:34] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:17:35] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:17:41] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:17:45] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 12:17:47] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:17:47] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Implemented scalable data pipelines using Python and Airflow, improving data quality through testing.
+[2026-03-17 12:17:47] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 12:17:47] CREATED  outputs/report_20260317_121747.md  — Saved markdown resume match report
+[2026-03-17 12:17:47] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_121747.md
+[2026-03-17 12:18:00] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:18:00] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:18:01] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:18:08] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:18:09] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 12:18:11] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:18:12] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 12:18:12] CREATED  outputs/report_20260317_121812.md  — Saved markdown resume match report
+[2026-03-17 12:18:12] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_121812.md
+[2026-03-17 12:28:59] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:29:00] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:29:00] RUN      main.py --resume data/sample_resume.docx --jd data/sample_jd.txt --verbose  — Pipeline failed: Failed to extract JD requirements with Groq: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+[2026-03-17 12:32:06] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:32:06] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:32:06] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline failed: Failed to extract JD requirements with Groq: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+[2026-03-17 12:35:59] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:35:59] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:35:59] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline failed: Failed to extract JD requirements with Groq: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+[2026-03-17 12:43:57] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:43:57] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:44:06] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:44:08] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:45:28] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 12:45:29] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline failed: Failed to create embeddings: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-proj-********************************************************************************************************************************************************45MA. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'code': 'invalid_api_key', 'param': None}, 'status': 401}
+[2026-03-17 12:49:57] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:49:57] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:49:59] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline failed: Failed to extract JD requirements with Ollama: Connection error.
+[2026-03-17 12:51:29] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:51:29] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:51:29] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline failed: Failed to extract JD requirements with Groq: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+[2026-03-17 12:58:12] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 12:58:12] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 12:58:17] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:58:23] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:58:55] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 12:58:55] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 12:58:56] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Established container-native CI/CD pipelines using GitHub Actions and Jenkins, enhancing data reliability and monitoring on AWS with Airflow and Azure Kubernetes Service (AKS).
+[2026-03-17 12:58:56] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Engineered and deployed a multi-agent RAG architecture (FAISS, Sentence Transformers, LangChain, OpenAI API) achieving 89% top 3 recall, enhancing bid-win probability and proposal velocity.
+[2026-03-17 12:58:56] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Engineered a Contract Intelligence Platform using Spring Boot, Redis, and Kafka, delivering 1,000+ real-time document inferences/day while reducing query latency by 70%.
+[2026-03-17 12:58:56] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Enhanced data pipeline reliability and monitoring by implementing Agile methodologies and TDD, optimizing CI/CD processes, and driving DevOps best practices, accelerating feature delivery velocity by 45%.
+[2026-03-17 12:58:56] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 12:58:56] CREATED  outputs/report_20260317_125856.md  — Saved markdown resume match report
+[2026-03-17 12:58:56] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_125856.md
+[2026-03-17 13:08:55] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 13:08:55] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 13:08:58] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:09:01] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:09:05] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 13:09:06] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:09:07] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed container-native CI/CD pipelines using GitHub Actions and Jenkins, enhancing deployment reliability and performance on Azure Kubernetes Service (AKS) clusters.
+[2026-03-17 13:09:07] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed and implemented RAG data pipelines using Python, SQL, FAISS, LangChain, and OpenAI API, achieving 89% top 3 recall, enhancing data reliability and supporting SaaS analytics.
+[2026-03-17 13:09:07] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Spearheaded design of a Contract Intelligence Platform leveraging Spring Boot, Redis, Kafka, and Hugging Face Transformers, delivering 1,000+ real-time document inferences/day while reducing query latency by 70%.
+[2026-03-17 13:09:07] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Spearheaded DevOps excellence through Agile, TDD, and performance-tuning sprints, hardening CI/CD pipelines and accelerating feature delivery velocity by 45%.
+[2026-03-17 13:09:07] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 13:09:07] CREATED  outputs/report_20260317_130907.md  — Saved markdown resume match report
+[2026-03-17 13:09:07] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_130907.md
+[2026-03-17 13:10:46] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 13:10:46] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 13:10:48] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:10:51] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:11:15] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 13:11:16] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:11:17] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed container-native CI/CD pipelines using GitHub Actions and Jenkins, enhancing deployment reliability and telemetry on Azure Kubernetes Service (AKS) clusters.
+[2026-03-17 13:11:17] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Productionized multi-agent RAG architecture with FAISS, LangChain, OpenAI API, enhancing data pipeline performance, achieving 89% top 3 recall, boosting bid-win probability and proposal velocity.
+[2026-03-17 13:11:17] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed a Contract Intelligence Platform using Redis and Kafka, enhancing data pipeline performance and reducing query latency by 70%, processing 1,000+ real-time document inferences daily.
+[2026-03-17 13:11:17] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Enhanced DevOps by accelerating CI/CD pipeline performance by 45% using Agile and TDD, improving data reliability and supporting SaaS business intelligence at [Company Name].
+[2026-03-17 13:11:17] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 13:11:17] CREATED  outputs/report_20260317_131117.md  — Saved markdown resume match report
+[2026-03-17 13:11:17] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_131117.md
+[2026-03-17 13:13:56] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 13:13:56] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 13:13:59] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:14:01] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:14:26] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 13:14:27] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:14:28] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed container-native CI/CD pipelines using GitHub Actions and Jenkins, enhancing deployment reliability and telemetry on Azure Kubernetes Service (AKS) clusters.
+[2026-03-17 13:14:28] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed and optimized a multi-agent RAG architecture using FAISS, LangChain, and OpenAI API, achieving 89% top 3 recall, enhancing data reliability and pipeline performance for product analytics.
+[2026-03-17 13:14:28] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed a Contract Intelligence Platform using Spring Boot, Redis, Kafka, and Hugging Face Transformers, processing 1,000+ real-time document inferences daily and reducing query latency by 70%.
+[2026-03-17 13:14:28] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Accelerated feature delivery by 45% through Agile, TDD, and performance-tuning sprints, enhancing DevOps and CI/CD pipelines, and improving data pipeline reliability and performance.
+[2026-03-17 13:14:28] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 13:14:28] CREATED  outputs/report_20260317_131428.md  — Saved markdown resume match report
+[2026-03-17 13:14:28] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_131428.md
+[2026-03-17 13:15:36] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 13:15:36] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 13:15:39] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:15:42] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:16:06] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 13:16:08] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 13:16:09] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed container-native CI/CD pipelines using GitHub Actions and Jenkins, enhancing deployment reliability and telemetry on Azure Kubernetes Service (AKS) clusters.
+[2026-03-17 13:16:09] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed and deployed a multi-agent RAG architecture using FAISS, LangChain, and OpenAI API, achieving 89% top 3 recall, enhancing data reliability and pipeline performance for SaaS business intelligence.
+[2026-03-17 13:16:09] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed a Contract Intelligence Platform using Spring Boot, Redis, Kafka, and Hugging Face Transformers, achieving 1,000+ real-time document inferences/day and enhancing query latency by 70%.
+[2026-03-17 13:16:09] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Accelerated feature delivery by 45% through Agile, TDD, and CI/CD pipeline optimization, enhancing DevOps excellence and mentoring junior engineers in best practices.
+[2026-03-17 13:16:09] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 13:16:09] CREATED  outputs/report_20260317_131609.md  — Saved markdown resume match report
+[2026-03-17 13:16:09] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_131609.md
+[2026-03-17 14:36:35] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline started
+[2026-03-17 14:36:35] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 14:36:35] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:36:38] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:36:38] CREATED  outputs/report_20260317_143638.md  — Saved markdown resume match report
+[2026-03-17 14:36:38] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_143638.md
+[2026-03-17 14:37:53] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline started
+[2026-03-17 14:37:53] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 14:37:53] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:37:56] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:37:56] CREATED  outputs/report_20260317_143756.md  — Saved markdown resume match report
+[2026-03-17 14:37:56] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_143756.md
+[2026-03-17 14:38:51] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 14:38:51] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 14:38:55] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:38:58] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:39:29] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 14:39:30] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:39:31] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed container-native CI/CD pipelines using GitHub Actions and Jenkins, enhancing deployment reliability and telemetry on Azure Kubernetes Service (AKS) clusters.
+[2026-03-17 14:39:31] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Engineered and deployed a multi-agent RAG architecture using FAISS, Sentence Transformers, LangChain, and OpenAI API, achieving 89% top 3 recall, enhancing data reliability and pipeline performance.
+[2026-03-17 14:39:31] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed a Contract Intelligence Platform using Spring Boot, Redis, Kafka, and Hugging Face Transformers, achieving 1,000+ real-time document inferences/day and enhancing data pipeline performance by reducing query latency 70%.
+[2026-03-17 14:39:31] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Enhanced DevOps by accelerating CI/CD pipeline performance by 45% using Agile and TDD, improving data reliability and supporting SaaS business intelligence through efficient data pipelines.
+[2026-03-17 14:39:31] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 14:39:31] CREATED  outputs/report_20260317_143931.md  — Saved markdown resume match report
+[2026-03-17 14:39:31] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_143931.md
+[2026-03-17 14:44:24] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline started
+[2026-03-17 14:44:24] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 14:44:24] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:44:26] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:44:26] CREATED  outputs/report_20260317_144426.md  — Saved markdown resume match report
+[2026-03-17 14:44:26] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_144426.md
+[2026-03-17 14:45:49] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline started
+[2026-03-17 14:45:49] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 14:45:49] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:45:51] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 14:45:51] CREATED  outputs/report_20260317_144551.md  — Saved markdown resume match report
+[2026-03-17 14:45:51] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_144551.md
+[2026-03-17 15:54:30] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline started
+[2026-03-17 15:54:30] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 15:54:33] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 15:54:37] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 15:55:05] MODIFIED outputs/rewritten_resume.json  — Saved structured resume JSON
+[2026-03-17 15:55:07] MODIFIED outputs/score_after.json  — Saved intermediate pipeline JSON
+[2026-03-17 15:55:08] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Developed container-native CI/CD pipelines using GitHub Actions and Jenkins, enhancing deployment reliability and telemetry on Azure Kubernetes Service (AKS) clusters.
+[2026-03-17 15:55:08] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Productionized multi-agent RAG architecture using FAISS, LangChain, and OpenAI API, achieving 89% top 3 recall, enhancing data pipeline performance and supporting SaaS business intelligence.
+[2026-03-17 15:55:08] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Designed a Contract Intelligence Platform using Python, SQL, and Kafka, enhancing data pipeline performance and reducing query latency by 70%, processing 1,000+ real-time document inferences daily.
+[2026-03-17 15:55:08] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Trimmed bullet from : Accelerated feature delivery by 45% through Agile, TDD, and performance-tuning sprints, enhancing DevOps CI/CD pipelines and driving best practices in data pipeline reliability and performance.
+[2026-03-17 15:55:08] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated tailored resume DOCX
+[2026-03-17 15:55:08] CREATED  outputs/report_20260317_155508.md  — Saved markdown resume match report
+[2026-03-17 15:55:08] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_155508.md
+[2026-03-17 16:28:49] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 16:28:49] RUN      builder preview data/Gnyani_Resume_Final__2_.docx  — Generated formatting verification DOCX at outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx
+[2026-03-17 16:28:49] MODIFIED outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx  — Generated formatting verification DOCX from parsed real resume JSON
+[2026-03-17 17:08:47] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline started
+[2026-03-17 17:08:47] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 17:08:47] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 17:08:50] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 17:08:50] CREATED  outputs/report_20260317_170850.md  — Saved markdown resume match report
+[2026-03-17 17:08:50] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_170850.md
+[2026-03-17 17:08:50] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --dry-run  — Pipeline started
+[2026-03-17 17:08:50] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 17:08:50] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 17:08:53] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 17:08:53] CREATED  outputs/report_20260317_170853.md  — Saved markdown resume match report
+[2026-03-17 17:08:53] RUN      main.py --resume data/Gnyani_Resume_Final__2_.docx --jd data/sample_jd.txt --dry-run  — Pipeline completed successfully; report saved to outputs/report_20260317_170853.md
+[2026-03-17 17:10:35] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline started
+[2026-03-17 17:10:35] MODIFIED outputs/parsed_resume.json  — Saved structured resume JSON
+[2026-03-17 17:10:35] MODIFIED outputs/jd_requirements.json  — Saved intermediate pipeline JSON
+[2026-03-17 17:10:38] MODIFIED outputs/score_before.json  — Saved intermediate pipeline JSON
+[2026-03-17 17:10:38] CREATED  outputs/report_20260317_171038.md  — Saved markdown resume match report
+[2026-03-17 17:10:38] RUN      main.py --resume outputs/Gnyani_Meridian_Loop_Senior_Data_Engineer.docx --jd data/sample_jd.txt --dry-run --verbose  — Pipeline completed successfully; report saved to outputs/report_20260317_171038.md
+[2026-03-18 13:01:56] MODIFIED frontend.html  — Added already-present keyword counts and filter alongside gained and missing in the results UI
+[2026-03-18 13:10:45] MODIFIED frontend.html  — Adjusted the page and grid layout to fit the viewport with a 1 cm desktop margin and no horizontal overflow

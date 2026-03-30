@@ -1,0 +1,21 @@
+.env
+
+node_modules/
+
+.venv/
+venv/
+# Generated pipeline outputs – not needed in Vercel deployment bundle
+outputs/*.docx
+outputs/*.pdf
+outputs/*.json
+outputs/*.md
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Local / system files
+.DS_Store
+.vercel
+.env*.local
