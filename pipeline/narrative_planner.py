@@ -1,52 +1,41 @@
-"""Narrative planning layer.
-
-Before any bullet is rewritten, this module:
-1. Reads the full resume + JD keywords + narrative intent together
-2. Classifies every JD keyword as VERBATIM / REPHRASEABLE / ABSENT
-3. Assigns each bullet a story emphasis and a list of rephraseable keywords
-4. Produces a NarrativePlan that the rewriter uses instead of brute-force injection
-
-Two public entrypoints:
-  - classify_and_plan()        → NarrativePlan
-  - generate_narrative_summary() → str (professional summary for the resume header)
-"""
+"""Narrative planning and summary generation."""
 
 from __future__ import annotations
 
 import json
 import os
 import re
-from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any
 
 from openai import OpenAI
 
 from config import OPENAI_API_KEY, OPENAI_BASE_URL, REWRITE_MODEL
+from pipeline.project_signals import extract_high_confidence_project_ml_signals
 
 
-# ── dataclasses ──────────────────────────────────────────────────────────────
+def _openai_key_available() -> bool:
+    return bool((os.environ.get("OPENAI_API_KEY") or OPENAI_API_KEY or "").strip())
+
 
 @dataclass
 class BulletPlan:
     exp_idx: int
     bullet_idx: int
     original: str
-    action: str                        # "keep" | "reframe" | "rewrite"
-    emphasis: str                      # what story angle this bullet reinforces
+    action: str
+    emphasis: str
     rephraseable_kws: list[str] = field(default_factory=list)
-    rationale: str = ""                # why this bullet matters for the role
+    rationale: str = ""
 
 
 @dataclass
 class NarrativePlan:
     engineering_identity: str
-    resume_arc: str                    # 1-2 sentence overall story
+    resume_arc: str
     bullet_plans: list[BulletPlan] = field(default_factory=list)
-    uncoverable: list[str] = field(default_factory=list)  # genuinely absent — never fabricate
+    uncoverable: list[str] = field(default_factory=list)
 
-
-# ── helpers ──────────────────────────────────────────────────────────────────
 
 def _client() -> OpenAI:
     return OpenAI(
@@ -64,35 +53,105 @@ def _parse_json(text: str) -> Any:
 
 
 def _resume_text(resume_json: dict[str, Any]) -> str:
-    """Flatten the resume to a single string for quick keyword scanning."""
     parts: list[str] = [resume_json.get("name", ""), resume_json.get("summary", "")]
     for exp in resume_json.get("experience", []):
         parts.append(exp.get("role", ""))
         parts.append(exp.get("company", ""))
-        for b in exp.get("bullets", []):
-            parts.append(b if isinstance(b, str) else b.get("text", ""))
+        for bullet in exp.get("bullets", []):
+            parts.append(bullet if isinstance(bullet, str) else bullet.get("text", ""))
     for cat, vals in resume_json.get("skills", {}).items():
-        parts.extend(vals if isinstance(vals, list) else [])
+        if isinstance(vals, list):
+            parts.extend(vals)
     for proj in resume_json.get("projects", []):
-        for b in proj.get("bullets", []):
-            parts.append(b if isinstance(b, str) else b.get("text", ""))
+        parts.append(proj.get("name", ""))
+        for bullet in proj.get("bullets", []):
+            parts.append(bullet if isinstance(bullet, str) else bullet.get("text", ""))
     return " ".join(parts)
 
 
 def _quick_classify_verbatim(keywords: list[str], resume_text: str) -> list[str]:
-    """Fast local check: which keywords appear verbatim (case-insensitive)?"""
     lower = resume_text.lower()
     return [kw for kw in keywords if kw.lower() in lower]
 
 
-# ── heuristic fallback (no API key) ─────────────────────────────────────────
+_PRIORITY_ML_TERMS = [
+    "machine learning",
+    "deep learning",
+    "TensorFlow",
+    "PyTorch",
+    "scikit-learn",
+    "statistics",
+    "algorithms",
+    "model optimization",
+    "machine learning models",
+]
+_TERM_ALIASES: dict[str, tuple[str, ...]] = {
+    "machine learning models": ("machine learning", "model", "models", "ml model", "ml models"),
+    "model optimization": ("optimiz", "model", "performance"),
+    "scikit-learn": ("scikit-learn", "scikit learn", "sklearn"),
+    "TensorFlow": ("tensorflow", "tensor flow"),
+    "PyTorch": ("pytorch", "py torch"),
+}
+
+
+def _resume_supports_ml_term(resume_json: dict[str, Any], term: str) -> bool:
+    text = _resume_text(resume_json).lower()
+    if term.lower() in text:
+        return True
+    aliases = _TERM_ALIASES.get(term, ())
+    return bool(aliases) and all(alias in text for alias in aliases)
+
+
+def _supported_priority_ml_terms(resume_json: dict[str, Any], jd_text: str, limit: int = 4) -> list[str]:
+    jd_lower = jd_text.lower()
+    supported: list[str] = []
+    for term in _PRIORITY_ML_TERMS:
+        if term.lower() not in jd_lower:
+            continue
+        if _resume_supports_ml_term(resume_json, term):
+            supported.append(term)
+        if len(supported) >= limit:
+            break
+    return supported
+
+
+def _prioritize_terms_for_jd(terms: list[str], jd_text: str, limit: int) -> list[str]:
+    jd_lower = jd_text.lower()
+    jd_hits = [term for term in terms if term.lower() in jd_lower]
+    ordered = jd_hits + [term for term in terms if term not in jd_hits]
+    return ordered[:limit]
+
+
+def _summary_signal_guidance(resume_json: dict[str, Any], jd_text: str) -> dict[str, list[str]]:
+    project_signals = extract_high_confidence_project_ml_signals(resume_json)
+    preferred_frameworks = _prioritize_terms_for_jd(
+        project_signals.get("frameworks", []),
+        jd_text,
+        limit=1,
+    )
+    preferred_concepts = _prioritize_terms_for_jd(
+        project_signals.get("concepts", []),
+        jd_text,
+        limit=1,
+    )
+    fallback_terms = [
+        term
+        for term in _supported_priority_ml_terms(resume_json, jd_text, limit=4)
+        if term not in preferred_frameworks and term not in preferred_concepts
+    ][:2]
+    return {
+        "frameworks": preferred_frameworks,
+        "concepts": preferred_concepts,
+        "fallback_terms": fallback_terms,
+        "all": preferred_frameworks + preferred_concepts + fallback_terms,
+    }
+
 
 def _heuristic_plan(
     resume_json: dict[str, Any],
     keywords: list[str],
     narrative_intent: dict[str, Any],
 ) -> NarrativePlan:
-    """Build a minimal NarrativePlan without an API call."""
     resume_text = _resume_text(resume_json)
     verbatim = set(_quick_classify_verbatim(keywords, resume_text))
     uncoverable = [kw for kw in keywords if kw not in verbatim]
@@ -101,15 +160,17 @@ def _heuristic_plan(
     for exp_idx, exp in enumerate(resume_json.get("experience", [])):
         for b_idx, bullet in enumerate(exp.get("bullets", [])):
             text = bullet if isinstance(bullet, str) else bullet.get("text", "")
-            bullet_plans.append(BulletPlan(
-                exp_idx=exp_idx,
-                bullet_idx=b_idx,
-                original=text,
-                action="keep",
-                emphasis=narrative_intent.get("engineering_identity", "relevant engineering work"),
-                rephraseable_kws=[],
-                rationale="Heuristic mode — no rewrite attempted.",
-            ))
+            bullet_plans.append(
+                BulletPlan(
+                    exp_idx=exp_idx,
+                    bullet_idx=b_idx,
+                    original=text,
+                    action="keep",
+                    emphasis=narrative_intent.get("engineering_identity", "relevant engineering work"),
+                    rephraseable_kws=[],
+                    rationale="Heuristic mode — no rewrite attempted.",
+                )
+            )
 
     return NarrativePlan(
         engineering_identity=narrative_intent.get("engineering_identity", "software engineer"),
@@ -119,26 +180,15 @@ def _heuristic_plan(
     )
 
 
-# ── main planning call ────────────────────────────────────────────────────────
-
 def classify_and_plan(
     resume_json: dict[str, Any],
     keywords: list[str],
     narrative_intent: dict[str, Any],
     evidence_map: dict[str, Any] | None = None,
 ) -> NarrativePlan:
-    """
-    Core planning function. One LLM call that:
-      - classifies every keyword as VERBATIM / REPHRASEABLE / ABSENT
-      - assigns each bullet an emphasis angle + rephraseable keywords
-      - produces the overall resume arc
-
-    Returns a NarrativePlan ready for the rewriter.
-    """
-    if not OPENAI_API_KEY:
+    if not _openai_key_available():
         return _heuristic_plan(resume_json, keywords, narrative_intent)
 
-    # Build a compact resume representation for the prompt
     resume_compact = _build_compact_resume(resume_json)
     kw_list = "\n".join(f"  - {kw}" for kw in keywords)
     themes = ", ".join(narrative_intent.get("dominant_themes", []))
@@ -170,34 +220,30 @@ SUPPORTED EVIDENCE MAP:
 CANDIDATE'S RESUME:
 {resume_compact}
 
-Your task is to produce a narrative plan as JSON. Do the following:
+Your task is to produce a narrative plan as JSON.
 
-1. For each JD keyword, classify it as one of:
-   - "verbatim": the keyword already appears in the resume text — no action needed
-   - "rephraseable": the underlying concept or work is present in the resume but uses different language — can be reframed to include this keyword naturally
-   - "absent": no evidence of this concept anywhere in the resume — do NOT attempt to add it
-
-Additional constraints:
-- Prefer software engineering, backend systems, distributed systems, reliability, observability, cloud, monitoring, coding, debugging, and feature-delivery themes when they are supported.
-- If the target role is broader software engineering, reduce emphasis on AI/LLM/RAG language unless it is central to the candidate's strongest supported evidence.
-- Never turn an unsupported keyword into a rephraseable one.
-- Every rewrite should still sound believable to a tech lead reading the resume.
+1. For each JD keyword, classify it as:
+   - "verbatim"
+   - "rephraseable"
+   - "absent"
 
 2. For each bullet in the experience section, decide:
-   - "action": "keep" (bullet already strongly supports the role), "reframe" (good content, wrong emphasis), or "rewrite" (weak or misaligned for this role)
-   - "emphasis": a short phrase describing what story angle this bullet should reinforce for the target role
-   - "rephraseable_kws": from the rephraseable keywords above, which ones could naturally fit into this bullet's rewrite
-   - "rationale": one sentence explaining why this bullet matters (or doesn't) for the role
+   - "action": "keep" | "reframe" | "rewrite"
+   - "emphasis"
+   - "rephraseable_kws"
+   - "rationale"
 
-3. Write a "resume_arc": 1-2 sentences describing the overall story the resume should tell for this role — the through-line that makes the candidate feel like a natural fit.
+3. Write "resume_arc": 1-2 sentences describing the overall story the resume should tell.
 
-Return JSON only in this exact structure:
+Rules:
+- Never turn an unsupported keyword into a rephraseable one.
+- Prefer grounded software engineering and platform themes when they are supported.
+- Return JSON only.
+
+Return JSON in this shape:
 {{
   "resume_arc": "...",
-  "keyword_classification": {{
-    "<keyword>": "verbatim" | "rephraseable" | "absent",
-    ...
-  }},
+  "keyword_classification": {{"<keyword>": "verbatim" | "rephraseable" | "absent"}},
   "bullet_plans": [
     {{
       "exp_idx": 0,
@@ -206,12 +252,9 @@ Return JSON only in this exact structure:
       "emphasis": "...",
       "rephraseable_kws": ["..."],
       "rationale": "..."
-    }},
-    ...
+    }}
   ]
-}}
-
-Include ALL bullets from ALL experience entries. exp_idx is 0-based (order in resume), bullet_idx is 0-based within each role."""
+}}"""
 
     try:
         response = _client().chat.completions.create(
@@ -220,35 +263,33 @@ Include ALL bullets from ALL experience entries. exp_idx is 0-based (order in re
             temperature=0,
             messages=[{"role": "user", "content": prompt}],
         )
-        raw = (response.choices[0].message.content or "").strip()
-        payload = _parse_json(raw)
+        payload = _parse_json((response.choices[0].message.content or "").strip())
     except Exception as exc:
         raise RuntimeError(f"classify_and_plan LLM call failed: {exc}") from exc
 
-    # ── parse keyword classification ─────────────────────────────────────────
     kw_classification: dict[str, str] = payload.get("keyword_classification", {})
     uncoverable = [kw for kw, status in kw_classification.items() if status == "absent"]
 
-    # ── parse bullet plans ───────────────────────────────────────────────────
     bullet_plans: list[BulletPlan] = []
     for bp in payload.get("bullet_plans", []):
         exp_idx = int(bp.get("exp_idx", 0))
-        b_idx = int(bp.get("bullet_idx", 0))
-        # Fetch original bullet text from resume
+        bullet_idx = int(bp.get("bullet_idx", 0))
         try:
-            bullet_raw = resume_json["experience"][exp_idx]["bullets"][b_idx]
+            bullet_raw = resume_json["experience"][exp_idx]["bullets"][bullet_idx]
             original = bullet_raw if isinstance(bullet_raw, str) else bullet_raw.get("text", "")
         except (IndexError, KeyError):
             original = ""
-        bullet_plans.append(BulletPlan(
-            exp_idx=exp_idx,
-            bullet_idx=b_idx,
-            original=original,
-            action=str(bp.get("action", "keep")),
-            emphasis=str(bp.get("emphasis", "")),
-            rephraseable_kws=[str(k) for k in bp.get("rephraseable_kws", [])],
-            rationale=str(bp.get("rationale", "")),
-        ))
+        bullet_plans.append(
+            BulletPlan(
+                exp_idx=exp_idx,
+                bullet_idx=bullet_idx,
+                original=original,
+                action=str(bp.get("action", "keep")),
+                emphasis=str(bp.get("emphasis", "")),
+                rephraseable_kws=[str(k) for k in bp.get("rephraseable_kws", [])],
+                rationale=str(bp.get("rationale", "")),
+            )
+        )
 
     return NarrativePlan(
         engineering_identity=identity,
@@ -258,37 +299,50 @@ Include ALL bullets from ALL experience entries. exp_idx is 0-based (order in re
     )
 
 
-# ── summary generation ────────────────────────────────────────────────────────
-
 def generate_narrative_summary(
     resume_json: dict[str, Any],
     narrative_plan: NarrativePlan,
 ) -> str:
-    """
-    Generate a 2-3 sentence professional summary that frames the candidate's
-    arc for the specific role — not a generic summary, but one that sets up
-    the story the rest of the resume tells.
-    """
-    if not OPENAI_API_KEY:
+    if not _openai_key_available():
         return ""
 
     resume_compact = _build_compact_resume(resume_json)
+    source_summary = str(resume_json.get("summary", "")).strip()
+    summary_signals = _summary_signal_guidance(resume_json, resume_compact)
+    framework_line = ", ".join(summary_signals["frameworks"]) if summary_signals["frameworks"] else "(none)"
+    concept_line = ", ".join(summary_signals["concepts"]) if summary_signals["concepts"] else "(none)"
+    fallback_line = ", ".join(summary_signals["fallback_terms"]) if summary_signals["fallback_terms"] else "(none)"
 
-    prompt = f"""Write a 2-3 sentence professional summary for a resume targeting this role.
+    prompt = f"""Write a professional summary for a resume targeting this role.
 
 TARGET ROLE: {narrative_plan.engineering_identity}
 RESUME ARC: {narrative_plan.resume_arc}
+
+CURRENT SOURCE SUMMARY (if any):
+{source_summary or "(none)"}
+
+HIGH-CONFIDENCE PROJECT ML FRAMEWORKS (prefer at most one if natural):
+{framework_line}
+
+HIGH-CONFIDENCE PROJECT ML CONCEPTS (prefer at most one if natural):
+{concept_line}
+
+OTHER SUPPORTED ML TERMS YOU MAY NATURALLY SURFACE IF ALREADY GROUNDED:
+{fallback_line}
 
 CANDIDATE'S EXPERIENCE:
 {resume_compact}
 
 RULES:
-1. Open with the engineering identity (e.g. "Backend systems engineer with X years...").
-2. Connect the candidate's actual experience to the role's core themes — no fluff.
-3. The summary should make a hiring manager think "this person has been building toward this role".
-4. Do NOT use generic phrases like "passionate about", "team player", "results-driven".
-5. Do NOT invent experience not in the resume.
-6. 2-3 sentences max. Return only the summary text."""
+1. Open with the engineering identity.
+2. Connect the candidate's actual experience to the role's core themes.
+3. Prefer project-backed ML signals when they exist: at most 1 framework mention and at most 1 concept mention total.
+4. Maximum 2 sentences total and maximum 2 ML keyword insertions total.
+5. Do NOT use generic phrases like "passionate about", "team player", or "results-driven".
+6. Do NOT invent experience not in the resume.
+7. Do NOT mention degrees unless already present in the current source summary.
+8. Do NOT mention mentoring, research, or leadership unless explicitly present in the resume text.
+9. Return only the summary text."""
 
     try:
         response = _client().chat.completions.create(
@@ -307,40 +361,50 @@ def generate_grounded_summary(
     target_role: str,
     evidence_map: dict[str, Any],
 ) -> str:
-    """
-    Generate a summary that leads with software engineering identity and only
-    uses supported evidence from the resume.
-    """
     supported = [
-        item["keyword"] for item in evidence_map.get("keyword_support", [])
+        item["keyword"]
+        for item in evidence_map.get("keyword_support", [])
         if item.get("support_level") in {"direct", "indirect"}
     ][:10]
+    summary_signals = _summary_signal_guidance(resume_json, " ".join(supported))
 
-    if not OPENAI_API_KEY:
-        top_terms = ", ".join(supported[:5])
+    if not _openai_key_available():
+        top_terms = ", ".join((summary_signals["all"] or supported)[:3])
         return (
             f"Software Engineer targeting {target_role} with experience building backend systems "
             f"and data-intensive platforms using {top_terms}."
         )[:320]
 
     resume_compact = _build_compact_resume(resume_json)
+    framework_line = ", ".join(summary_signals["frameworks"]) if summary_signals["frameworks"] else "(none)"
+    concept_line = ", ".join(summary_signals["concepts"]) if summary_signals["concepts"] else "(none)"
+    fallback_line = ", ".join(summary_signals["fallback_terms"]) if summary_signals["fallback_terms"] else "(none)"
+
     prompt = f"""Rewrite the summary for a software engineering role.
 
 TARGET ROLE: {target_role}
 SUPPORTED JD THEMES: {", ".join(supported)}
 
+HIGH-CONFIDENCE PROJECT ML FRAMEWORKS (prefer at most one if natural):
+{framework_line}
+
+HIGH-CONFIDENCE PROJECT ML CONCEPTS (prefer at most one if natural):
+{concept_line}
+
+OTHER SUPPORTED ML TERMS:
+{fallback_line}
+
 RESUME EVIDENCE:
 {resume_compact}
 
-Rules:
+RULES:
 1. Lead with software engineer or backend engineer identity, not AI specialist.
 2. Mention AI only as one part of broader engineering work.
-3. Include supported JD themes such as distributed systems, low latency, reliability, observability, cloud, architecture, and data intensive systems only when grounded in the resume.
-4. Keep it to 3 lines maximum.
+3. Prefer project-backed ML signals when they are present, but use at most 2 ML insertions total.
+4. Maximum 2 sentences total.
 5. Make it sound human and credible, not like a keyword list.
 6. Do not invent ownership, domains, or unsupported technologies.
-
-Return only the summary text."""
+7. Return only the summary text."""
 
     try:
         response = _client().chat.completions.create(
@@ -354,21 +418,23 @@ Return only the summary text."""
         raise RuntimeError(f"generate_grounded_summary failed: {exc}") from exc
 
 
-# ── compact resume builder for prompts ───────────────────────────────────────
-
 def _build_compact_resume(resume_json: dict[str, Any]) -> str:
-    """Build a compact but complete resume representation for LLM prompts."""
     lines: list[str] = []
     for exp_idx, exp in enumerate(resume_json.get("experience", [])):
         role = exp.get("role", "")
         company = exp.get("company", "")
         dates = exp.get("dates", "")
         lines.append(f"[Role {exp_idx}] {role} at {company} ({dates})")
-        for b_idx, bullet in enumerate(exp.get("bullets", [])):
+        for bullet_idx, bullet in enumerate(exp.get("bullets", [])):
             text = bullet if isinstance(bullet, str) else bullet.get("text", "")
-            lines.append(f"  Bullet {b_idx}: {text}")
+            lines.append(f"  Bullet {bullet_idx}: {text}")
+    for proj_idx, proj in enumerate(resume_json.get("projects", [])):
+        lines.append(f"[Project {proj_idx}] {proj.get('name', 'Project')}")
+        for bullet_idx, bullet in enumerate(proj.get("bullets", [])):
+            text = bullet if isinstance(bullet, str) else bullet.get("text", "")
+            lines.append(f"  Bullet {bullet_idx}: {text}")
     skills_flat: list[str] = []
-    for cat, vals in resume_json.get("skills", {}).items():
+    for _cat, vals in resume_json.get("skills", {}).items():
         if isinstance(vals, list):
             skills_flat.extend(vals)
     if skills_flat:
