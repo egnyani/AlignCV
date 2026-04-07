@@ -1078,6 +1078,34 @@ function App() {
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
+  /** Turn a failed fetch Response into a readable message (status + JSON detail or raw body). */
+  const parseApiError = async (res) => {
+    const status = res.status;
+    const statusText = (res.statusText || "").trim();
+    const head = `HTTP ${status}${statusText ? " " + statusText : ""}`;
+    const raw = await res.text();
+    if (!raw) return head;
+    try {
+      const j = JSON.parse(raw);
+      if (j && Object.prototype.hasOwnProperty.call(j, "detail")) {
+        const d = j.detail;
+        if (typeof d === "string") return `${head}\n${d}`;
+        if (Array.isArray(d)) {
+          const parts = d.map((item) => {
+            if (typeof item === "string") return item;
+            if (item && typeof item.msg === "string") return item.msg;
+            return JSON.stringify(item);
+          });
+          return `${head}\n${parts.join("\n")}`;
+        }
+        return `${head}\n${JSON.stringify(d)}`;
+      }
+      return `${head}\n${raw.slice(0, 4000)}`;
+    } catch {
+      return `${head}\n${raw.slice(0, 4000)}`;
+    }
+  };
+
   const handleGenerate = async () => {
     if (mode === "paste" && !jdText.trim()) {
       setError("Please paste the job description text.");
@@ -1098,8 +1126,7 @@ function App() {
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const detail = await res.json().then(d => d.detail).catch(() => "Unknown error");
-        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+        throw new Error(await parseApiError(res));
       }
       setResult(await res.json());
     } catch (err) {
