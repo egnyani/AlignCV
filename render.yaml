@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: resume-pdf-converter
-    runtime: docker
-    plan: free
-    dockerfilePath: ./pdf-service/Dockerfile
-    healthCheckPath: /health

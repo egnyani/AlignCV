@@ -5,10 +5,14 @@ node_modules/
 .venv/
 venv/
 # Generated pipeline outputs – not needed in Vercel deployment bundle
-outputs/*.docx
-outputs/*.pdf
-outputs/*.json
-outputs/*.md
+outputs/
+
+# Local-only / not deployed to Vercel
+main.py
+test_bullet.py
+render.yaml
+scripts/
+build.log
 
 # Python cache
 __pycache__/
