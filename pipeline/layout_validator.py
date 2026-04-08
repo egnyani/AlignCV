@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 import zipfile
 from collections import Counter
 from pathlib import Path
@@ -122,18 +123,38 @@ def _paragraph_fingerprints(docx_path: str | Path) -> list[dict[str, Any]]:
     return fingerprints
 
 
+def _extract_ppr_attrs(ppr_xml: str) -> dict[str, str]:
+    """Extract key structural attributes from a pPr XML string, ignoring namespace declarations.
+
+    Compares only the attributes that affect layout (style, spacing, indent, justification)
+    rather than the full XML string, which changes when lxml re-serializes the document.
+    """
+    attrs: dict[str, str] = {}
+    for tag, attr in (
+        ("pStyle", "w:val"),
+        ("jc", "w:val"),
+    ):
+        m = re.search(rf'<w:{tag}[^>]*w:val="([^"]*)"', ppr_xml)
+        attrs[tag] = m.group(1) if m else ""
+    for tag, attr in (("spacing", "w:before"), ("ind", "w:left")):
+        m = re.search(rf'<w:{tag}[^>]*{attr}="([^"]*)"', ppr_xml)
+        attrs[tag] = m.group(1) if m else ""
+    return attrs
+
+
 def _contact_structure(document: Document, docx_path: str | Path) -> dict[str, Any]:
     paragraphs = _nonempty_paragraphs(document)
     xml_paragraphs = _paragraph_fingerprints(docx_path)
     contact = paragraphs[1] if len(paragraphs) > 1 else None
     xml_contact = xml_paragraphs[1] if len(xml_paragraphs) > 1 else {}
+    ppr_xml = xml_contact.get("ppr", "")
     return {
         "name_text": (paragraphs[0].text if paragraphs else "").strip(),
         "contact_text": (contact.text if contact else "").strip(),
         "name_style": paragraphs[0].style.name if paragraphs and paragraphs[0].style else "",
         "contact_style": contact.style.name if contact and contact.style else "",
         "contact_tabs": xml_contact.get("tabs", 0),
-        "contact_ppr": xml_contact.get("ppr", ""),
+        "contact_ppr": _extract_ppr_attrs(ppr_xml),
     }
 
 

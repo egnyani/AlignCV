@@ -236,7 +236,12 @@ Your task is to produce a narrative plan as JSON.
 3. Write "resume_arc": 1-2 sentences describing the overall story the resume should tell.
 
 Rules:
-- Never turn an unsupported keyword into a rephraseable one.
+- A keyword is "verbatim" if the resume already uses that exact term.
+- A keyword is "rephraseable" if the resume has transferable or adjacent experience that can be honestly positioned toward it (e.g., AWS experience → Azure familiarity, CI/CD → lifecycle automation, API/backend work → distributed systems concepts). Use this freely when there is a real skill bridge.
+- A keyword is "absent" ONLY if there is truly zero relevant experience in any form — do not default to "absent" just because the exact term is missing.
+- Aim to mark at least 50% of keywords as "rephraseable" unless the skill gaps are genuinely unbridgeable.
+- For bullets: prefer "rewrite" or "reframe" when a bullet can be strengthened to better align with the role. Use "keep" only when the bullet is already well-aligned and changing it would add no value.
+- Do NOT fabricate experience or claim skills the candidate clearly does not have.
 - Prefer grounded software engineering and platform themes when they are supported.
 - Return JSON only.
 

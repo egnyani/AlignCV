@@ -22,7 +22,14 @@ _CONCEPT_ALIASES: dict[str, list[str]] = {
     "development practices": ["ci/cd", "testing", "review", "best practices", "standards"],
     "feature design": ["feature", "designed", "design", "product", "platform"],
     "estimation": ["estimate", "estimation", "planning", "delivery"],
+    "azure": ["azure", "azure sql", "aks", "azure cloud"],
     "azure cloud": ["azure", "azure sql", "aks", "azure cloud"],
+    "azure services": ["azure", "azure sql", "aks", "azure functions", "azure storage"],
+    "azure graph": ["azure graph", "microsoft graph", "azure ad", "entra"],
+    "cloud infrastructure": ["cloud infrastructure", "cloud", "aws", "azure", "gcp", "kubernetes", "terraform"],
+    "lifecycle automation": ["lifecycle automation", "ci/cd", "pipeline", "automation", "devops"],
+    "metadata automation": ["metadata automation", "metadata", "data pipeline", "etl"],
+    "react.js": ["react.js", "react", "reactjs"],
     "spark": ["spark", "apache spark"],
     "hadoop": ["hadoop"],
     "docker": ["docker"],
@@ -41,6 +48,20 @@ _INDIRECT_HINTS: dict[str, list[str]] = {
     "design documents": ["documentation", "technical design", "design", "architecture"],
     "debugging": ["incident", "defect", "issue", "bug", "troubleshoot"],
     "operations at scale": ["production", "scalable", "throughput", "latency", "monitoring"],
+    # Cloud / Azure — AWS or any cloud deployment counts as indirect
+    "azure": ["aws", "cloud", "azure", "gcp", "kubernetes", "docker", "deployment"],
+    "azure services": ["aws", "cloud", "azure", "api", "storage", "queue", "database"],
+    "azure graph": ["azure", "graph", "api", "oauth", "authentication", "identity"],
+    "azure cloud": ["aws", "cloud", "azure", "gcp", "kubernetes", "deployment"],
+    "cloud infrastructure": ["aws", "cloud", "infrastructure", "deployment", "docker", "kubernetes", "container", "terraform"],
+    # Distributed systems — API/backend/microservice work counts
+    "distributed systems": ["api", "backend", "service", "microservice", "scalable", "distributed", "queue", "async"],
+    # Automation / lifecycle
+    "lifecycle automation": ["automation", "ci/cd", "pipeline", "workflow", "deploy", "devops", "script"],
+    "metadata automation": ["metadata", "automation", "pipeline", "etl", "data", "ingestion", "schema"],
+    # React / frontend
+    "react.js": ["react", "javascript", "frontend", "ui", "component", "jsx"],
+    "react": ["react", "javascript", "frontend", "ui", "component"],
 }
 
 _ENGINEERING_PRIORITY = {
