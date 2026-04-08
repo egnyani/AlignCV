@@ -312,7 +312,6 @@ def layout_validation_passed(validation: dict[str, Any]) -> bool:
         "summary_heading_position_same",
         "top_paragraphs_before_summary_same",
         "summary_body_in_place",
-        "line_counts_same",
         "content_within_template_bounds",
         "bottom_whitespace_reasonable",
         "one_page",

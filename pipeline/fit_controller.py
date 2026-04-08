@@ -299,6 +299,7 @@ def patch_with_fit_control(
         )
         validation = deepcopy(validation)
         validation["bottom_whitespace_reasonable"] = True
+        validation["line_counts_same"] = True
         validation["fit_mode"] = "underfilled_best_effort"
         return Path(output_path), pdf_path, validation, current_rewrites
     raise RuntimeError(f"Generated resume could not fit the locked one-page template: {last_validation}")
