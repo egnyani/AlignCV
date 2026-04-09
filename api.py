@@ -42,7 +42,7 @@ from pipeline.embedder import embed_keywords, embed_resume
 from pipeline.evidence_map import build_evidence_map, omitted_unsupported_keywords, prioritized_supported_keywords
 from pipeline.fit_controller import patch_with_fit_control
 from pipeline.jd_extractor import extract_company_role, extract_jd_keywords, extract_jd_narrative_intent
-from pipeline.layout_validator import layout_validation_passed
+from pipeline.layout_validator import layout_validation_failures, layout_validation_passed
 from pipeline.parser import parse_resume
 from pipeline.rewriter import keyword_driven_rewrite, narrative_driven_rewrite
 from pipeline.narrative_planner import classify_and_plan, generate_grounded_summary, generate_narrative_summary
@@ -335,16 +335,38 @@ def generate(req: GenerateRequest) -> dict[str, Any]:
     role = _sanitize(identity.get("role", "Role"))
     docx_filename = f"Gnyani_{company}_{role}.docx"
     output_path = OUTPUTS_DIR / docx_filename
-    output_path, pdf_path, layout_validation, fitted_rewrites = patch_with_fit_control(
-        RESUME_LAYOUT_DOCX,
-        output_path,
-        enriched,
-        summary_text=summary or None,
-        original_summary=(resume_json.get("summary") or None),
-        modified_sections=modified_sections,
-    )
+    try:
+        output_path, pdf_path, layout_validation, fitted_rewrites = patch_with_fit_control(
+            RESUME_LAYOUT_DOCX,
+            output_path,
+            enriched,
+            summary_text=summary or None,
+            original_summary=(resume_json.get("summary") or None),
+            modified_sections=modified_sections,
+        )
+    except RuntimeError as exc:
+        msg = str(exc)
+        if "PDF_SERVICE_URL" in msg:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "PDF conversion is not configured for this deployment. "
+                    "Set the PDF_SERVICE_URL environment variable to your DOCX→PDF service URL "
+                    "(see pipeline/pdf_converter.py). Underlying error: "
+                    + msg
+                ),
+            ) from exc
+        raise HTTPException(status_code=500, detail=msg) from exc
     if not layout_validation_passed(layout_validation):
-        raise HTTPException(status_code=500, detail=f"Template preservation failed: {layout_validation}")
+        failed = layout_validation_failures(layout_validation)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Template preservation failed",
+                "failed_checks": failed,
+                "layout_validation": layout_validation,
+            },
+        )
     docx_bytes = output_path.read_bytes()
     if not docx_bytes:
         raise HTTPException(status_code=500, detail="Generated DOCX is empty.")

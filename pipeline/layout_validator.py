@@ -319,22 +319,29 @@ def validate_layout_preservation(
     }
 
 
+_LAYOUT_VALIDATION_KEYS: tuple[str, ...] = (
+    "page_size_same",
+    "margins_same",
+    "section_count_same",
+    "borders_same",
+    "paragraph_count_same",
+    "major_styles_same",
+    "section_order_same",
+    "contact_header_structure_same",
+    "summary_heading_count_same",
+    "summary_heading_position_same",
+    "top_paragraphs_before_summary_same",
+    "summary_body_in_place",
+    "content_within_template_bounds",
+    "bottom_whitespace_reasonable",
+    "one_page",
+)
+
+
+def layout_validation_failures(validation: dict[str, Any]) -> list[str]:
+    """Keys that are not strictly True (including missing or None)."""
+    return [k for k in _LAYOUT_VALIDATION_KEYS if validation.get(k) is not True]
+
+
 def layout_validation_passed(validation: dict[str, Any]) -> bool:
-    required = [
-        "page_size_same",
-        "margins_same",
-        "section_count_same",
-        "borders_same",
-        "paragraph_count_same",
-        "major_styles_same",
-        "section_order_same",
-        "contact_header_structure_same",
-        "summary_heading_count_same",
-        "summary_heading_position_same",
-        "top_paragraphs_before_summary_same",
-        "summary_body_in_place",
-        "content_within_template_bounds",
-        "bottom_whitespace_reasonable",
-        "one_page",
-    ]
-    return all(validation.get(key) is True for key in required)
+    return not layout_validation_failures(validation)

@@ -1098,7 +1098,10 @@ function App() {
           });
           return `${head}\n${parts.join("\n")}`;
         }
-        return `${head}\n${JSON.stringify(d)}`;
+        if (d && typeof d === "object" && typeof d.message === "string" && Array.isArray(d.failed_checks)) {
+          return `${head}\n${d.message}: ${d.failed_checks.join(", ")}\n${JSON.stringify(d, null, 2)}`;
+        }
+        return `${head}\n${JSON.stringify(d, null, 2)}`;
       }
       return `${head}\n${raw.slice(0, 4000)}`;
     } catch {
