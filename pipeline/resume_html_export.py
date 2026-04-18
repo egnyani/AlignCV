@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import json
 import logging
 import os
@@ -13,6 +14,8 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 from typing import Any
+
+from playwright.sync_api import sync_playwright
 
 logger = logging.getLogger(__name__)
 
@@ -271,18 +274,184 @@ def semantic_resume_to_resume_data(
     }
 
 
-def generate_html_resume_pdf(
-    resume_data: dict[str, Any],
-    output_pdf: str | Path,
-    repo_root: str | Path | None = None,
-) -> Path:
-    """
-    Write resume JSON to a temp file, run Node/tsx Puppeteer exporter, return path to PDF.
-    """
-    root = Path(repo_root) if repo_root else Path(__file__).resolve().parents[1]
-    output_pdf = Path(output_pdf).resolve()
-    output_pdf.parent.mkdir(parents=True, exist_ok=True)
+def _ensure_href(url: str) -> str:
+    u = (url or "").strip()
+    if not u:
+        return ""
+    if re.match(r"^https?://", u, re.I):
+        return u
+    return f"https://{u}"
 
+
+def _inline_bold_html(text: str) -> str:
+    parts = re.split(r"\*\*(.+?)\*\*", text)
+    if len(parts) == 1:
+        return html.escape(text)
+    chunks: list[str] = []
+    for i, part in enumerate(parts):
+        if i % 2 == 1:
+            chunks.append(f"<strong>{html.escape(part)}</strong>")
+        else:
+            chunks.append(html.escape(part))
+    return "".join(chunks)
+
+
+def _resume_data_to_html(data: dict[str, Any]) -> str:
+    """
+    Static HTML mirroring resume_export/ResumeTemplate.tsx + resumeLayout styles.
+    Used for PDF generation where Node/npm is unavailable (e.g. Vercel Python).
+    """
+    c = data.get("contact") or {}
+    name = html.escape(str(c.get("name") or "Candidate"))
+    phone = html.escape(str(c.get("phone") or ""))
+    email = html.escape(str(c.get("email") or ""))
+    li_href = html.escape(_ensure_href(str(c.get("linkedin") or "linkedin.com")))
+    gh = (c.get("github") or "").strip()
+    gh_href = html.escape(_ensure_href(gh)) if gh else ""
+
+    parts: list[str] = [
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>",
+        "<style>",
+        "*{margin:0;padding:0;box-sizing:border-box;}body{background:#fff;}",
+        ".page{width:100%;max-width:750px;margin:0 auto;background:#fff;padding:32px;",
+        "font-family:'Times New Roman',Times,Georgia,serif;font-size:11pt;line-height:1.35;color:#000;}",
+        "h1{font-size:18pt;font-weight:700;text-align:center;margin:0 0 3px;letter-spacing:.5px;}",
+        ".contact{font-size:10pt;color:#457885;text-align:center;margin:0 0 6px;letter-spacing:.1px;}",
+        "a.contact-link{color:#457885;text-decoration:underline;}",
+        "h2{font-size:10.5pt;font-weight:700;font-variant:small-caps;letter-spacing:.5px;",
+        "border-bottom:1px solid #000;padding-bottom:1px;margin:7px 0 3px;text-transform:uppercase;}",
+        "ul.summary{list-style:disc;margin-left:20px;margin-top:0;padding:0;}",
+        "ul.summary li{font-size:11pt;line-height:1.45;margin-bottom:2px;text-align:justify;}",
+        ".row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0;}",
+        ".company{font-size:10.5pt;font-weight:700;}",
+        ".date{font-size:11pt;white-space:nowrap;font-weight:400;}",
+        ".title{font-size:11pt;font-style:italic;margin-bottom:1px;}",
+        ".loc{font-size:10pt;font-style:normal;margin-bottom:1px;}",
+        "ul.bullets{list-style:disc;margin-left:20px;padding:0;margin-top:1px;}",
+        "ul.bullets li{font-size:11pt;line-height:1.45;margin-bottom:2px;text-align:justify;}",
+        ".skill{font-size:11pt;line-height:1.55;margin-bottom:1px;}",
+        ".skill b{font-weight:700;}",
+        "</style></head><body>",
+        f'<div class="page"><h1>{name}</h1><p class="contact">',
+        f"{phone}&nbsp;&nbsp;|&nbsp;&nbsp;",
+        f'<a class="contact-link" href="mailto:{email}">{email}</a>',
+        "&nbsp;&nbsp;|&nbsp;&nbsp;",
+        f'<a class="contact-link" href="{li_href}">LinkedIn</a>',
+    ]
+    if gh:
+        parts.append("&nbsp;&nbsp;|&nbsp;&nbsp;")
+        parts.append(f'<a class="contact-link" href="{gh_href}">Github</a>')
+    parts.append("</p>")
+
+    parts.append("<section><h2>Summary</h2><ul class=\"summary\">")
+    for pt in data.get("summary") or []:
+        parts.append(f"<li>{_inline_bold_html(str(pt))}</li>")
+    parts.append("</ul></section>")
+
+    parts.append("<section><h2>Experience</h2>")
+    for role in data.get("experience") or []:
+        if not isinstance(role, dict):
+            continue
+        parts.append("<div style=\"margin-bottom:6px;\">")
+        parts.append("<div class=\"row\">")
+        parts.append(f"<span class=\"company\">{html.escape(str(role.get('company') or ''))}</span>")
+        parts.append(
+            f"<span class=\"date\">{html.escape(str(role.get('start') or ''))} - "
+            f"{html.escape(str(role.get('end') or ''))}</span></div>"
+        )
+        parts.append(f"<div class=\"title\">{html.escape(str(role.get('title') or ''))}</div>")
+        loc = (role.get("location") or "").strip()
+        if loc:
+            parts.append(f"<div class=\"loc\">{html.escape(loc)}</div>")
+        parts.append("<ul class=\"bullets\">")
+        for bullet in role.get("bullets") or []:
+            parts.append(f"<li>{_inline_bold_html(str(bullet))}</li>")
+        parts.append("</ul></div>")
+    parts.append("</section>")
+
+    parts.append("<section><h2>Technical Skills</h2>")
+    for cat, vals in (data.get("skills") or {}).items():
+        if not isinstance(vals, list):
+            continue
+        joined = html.escape(", ".join(str(v) for v in vals if str(v).strip()))
+        parts.append(
+            f'<div class="skill"><b>{html.escape(str(cat))}:</b> {joined}</div>'
+        )
+    parts.append("</section>")
+
+    parts.append("<section><h2>Education</h2>")
+    for edu in data.get("education") or []:
+        if not isinstance(edu, dict):
+            continue
+        parts.append("<div style=\"margin-bottom:4px;\">")
+        parts.append("<div class=\"row\">")
+        parts.append(f"<span class=\"company\">{html.escape(str(edu.get('school') or ''))}</span>")
+        parts.append(
+            f"<span class=\"date\">{html.escape(str(edu.get('start') or ''))} - "
+            f"{html.escape(str(edu.get('end') or ''))}</span></div>"
+        )
+        parts.append("<div class=\"row\">")
+        parts.append(f"<span class=\"title\" style=\"font-style:normal\">{html.escape(str(edu.get('degree') or ''))}</span>")
+        parts.append(
+            f"<span style=\"font-size:11pt;color:#555;white-space:nowrap\">"
+            f"{html.escape(str(edu.get('location') or ''))}</span></div></div>"
+        )
+    parts.append("</section>")
+
+    projects = data.get("projects") or []
+    if projects:
+        parts.append("<section><h2>Projects</h2>")
+        for proj in projects:
+            if not isinstance(proj, dict):
+                continue
+            parts.append("<div style=\"margin-bottom:6px;\">")
+            parts.append("<div class=\"row\">")
+            parts.append(f"<span class=\"company\">{html.escape(str(proj.get('name') or ''))}</span>")
+            parts.append(f"<span class=\"date\">{html.escape(str(proj.get('date') or ''))}</span></div>")
+            parts.append("<ul class=\"bullets\">")
+            for bullet in proj.get("bullets") or []:
+                parts.append(f"<li>{_inline_bold_html(str(bullet))}</li>")
+            parts.append("</ul></div>")
+        parts.append("</section>")
+
+    parts.append("</div></body></html>")
+    return "".join(parts)
+
+
+def _generate_html_resume_pdf_playwright(resume_data: dict[str, Any], output_pdf: Path) -> None:
+    output_pdf.parent.mkdir(parents=True, exist_ok=True)
+    html_doc = _resume_data_to_html(resume_data)
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        try:
+            page = browser.new_page()
+            page.set_viewport_size({"width": 816, "height": 600})
+            page.set_content(html_doc, wait_until="load", timeout=60_000)
+            pdf_height = page.evaluate(
+                """() => {
+                    const c = document.body.firstElementChild;
+                    if (!c) return Math.ceil(document.body.scrollHeight);
+                    return Math.ceil(c.getBoundingClientRect().height);
+                }"""
+            )
+            page.pdf(
+                path=str(output_pdf),
+                width="8.5in",
+                height=f"{pdf_height}px",
+                print_background=True,
+                margin={"top": "0", "bottom": "0", "left": "0", "right": "0"},
+            )
+        finally:
+            browser.close()
+
+
+def _generate_html_resume_pdf_npm(
+    resume_data: dict[str, Any],
+    output_pdf: Path,
+    repo_root: Path,
+) -> None:
+    """Local dev fallback: Node + Puppeteer (matches resume_export/exportPdf.ts)."""
     npm_cmd = "npm.cmd" if sys.platform.startswith("win") else "npm"
     fd, tmp_name = tempfile.mkstemp(suffix=".json", prefix="resume_export_")
     os.close(fd)
@@ -290,7 +459,7 @@ def generate_html_resume_pdf(
     try:
         tmp_input.write_text(json.dumps(resume_data, ensure_ascii=True, indent=2), encoding="utf-8")
         try:
-            rel_out = str(output_pdf.relative_to(root.resolve()))
+            rel_out = str(output_pdf.relative_to(repo_root.resolve()))
         except ValueError:
             rel_out = str(output_pdf)
 
@@ -306,7 +475,7 @@ def generate_html_resume_pdf(
         ]
         result = subprocess.run(
             cmd,
-            cwd=root,
+            cwd=str(repo_root),
             capture_output=True,
             text=True,
             timeout=180,
@@ -316,15 +485,36 @@ def generate_html_resume_pdf(
             raise RuntimeError(
                 result.stderr or result.stdout or "npm generate:resume-pdf failed",
             )
-        if not output_pdf.exists():
-            raise RuntimeError(f"PDF not written: {output_pdf}")
-        return output_pdf
     finally:
         if tmp_input.exists():
             try:
                 tmp_input.unlink()
             except OSError:
                 pass
+
+
+def generate_html_resume_pdf(
+    resume_data: dict[str, Any],
+    output_pdf: str | Path,
+    repo_root: str | Path | None = None,
+) -> Path:
+    """
+    Render resume JSON to PDF: Playwright (Chromium) first — works on Vercel where
+    ``npm`` is not bundled with the Python function. Falls back to ``npm run
+    generate:resume-pdf`` when Chromium is missing locally.
+    """
+    output_pdf = Path(output_pdf).resolve()
+    root = Path(repo_root) if repo_root else Path(__file__).resolve().parents[1]
+
+    try:
+        _generate_html_resume_pdf_playwright(resume_data, output_pdf)
+    except Exception as exc:
+        logger.warning("Playwright HTML resume PDF failed (%s); trying npm fallback", exc)
+        _generate_html_resume_pdf_npm(resume_data, output_pdf, root)
+
+    if not output_pdf.exists() or output_pdf.stat().st_size == 0:
+        raise RuntimeError(f"PDF not written: {output_pdf}")
+    return output_pdf
 
 
 def try_generate_html_resume_pdf(

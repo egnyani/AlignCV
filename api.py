@@ -376,7 +376,7 @@ def generate(req: GenerateRequest) -> dict[str, Any]:
     docx_pdf_bytes = pdf_path.read_bytes()
     html_pdf = try_generate_html_resume_pdf(
         updated_resume,
-        docx_for_contact=output_path,
+        docx_for_contact=RESUME_LAYOUT_DOCX,
         output_pdf=OUTPUTS_DIR / f"{Path(docx_filename).stem}_html.pdf",
         repo_root=Path(__file__).resolve().parent,
     )
