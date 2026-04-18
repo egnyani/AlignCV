@@ -9,6 +9,8 @@ import re
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -41,12 +43,102 @@ def parse_contact_from_docx(docx_path: str | Path) -> dict[str, str]:
     for paragraph in document.paragraphs:
         text = normalize_text(paragraph.text)
         if text and looks_like_contact_line(text):
-            return _parse_contact_line(text)
+            merged = _parse_contact_line(text)
+            for key, val in _contact_fields_from_hyperlinks(path).items():
+                if val:
+                    merged[key] = val
+            return merged
     return _empty_contact()
 
 
 def _empty_contact() -> dict[str, str]:
     return {"phone": "", "email": "", "linkedin": "", "github": ""}
+
+
+_W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+_REL_PKG = "http://schemas.openxmlformats.org/package/2006/relationships"
+_REL_OFFICE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+_HYPERLINK_REL_TYPE = f"{_REL_OFFICE}/hyperlink"
+
+
+def _load_doc_hyperlink_targets(docx_path: Path) -> dict[str, str]:
+    """Map relationship Id -> hyperlink Target URL (document.xml.rels)."""
+    with zipfile.ZipFile(docx_path) as zf:
+        rels_xml = zf.read("word/_rels/document.xml.rels")
+    root = ET.fromstring(rels_xml)
+    out: dict[str, str] = {}
+    for rel in root.findall(f"{{{_REL_PKG}}}Relationship"):
+        if rel.get("Type") != _HYPERLINK_REL_TYPE:
+            continue
+        rid = rel.get("Id")
+        target = (rel.get("Target") or "").strip()
+        if rid and target:
+            out[rid] = target
+    return out
+
+
+def _body_paragraph_elements(docx_path: Path) -> list[ET.Element]:
+    with zipfile.ZipFile(docx_path) as zf:
+        doc_xml = zf.read("word/document.xml")
+    root = ET.fromstring(doc_xml)
+    body = root.find(f".//{{{_W_NS}}}body")
+    if body is None:
+        return []
+    return [c for c in body if c.tag == f"{{{_W_NS}}}p"]
+
+
+def _paragraph_plain_text(p: ET.Element) -> str:
+    return "".join(t.text or "" for t in p.iter(f"{{{_W_NS}}}t"))
+
+
+def _hyperlink_rid(h: ET.Element) -> str | None:
+    key_id = f"{{{_REL_OFFICE}}}id"
+    rid = h.get(key_id)
+    if rid:
+        return rid
+    for attr, val in h.attrib.items():
+        if attr.endswith("}id"):
+            return val
+    return None
+
+
+def _contact_fields_from_hyperlinks(docx_path: Path) -> dict[str, str]:
+    """
+    Read GitHub / LinkedIn / mailto targets from Word hyperlinks on the contact row.
+
+    Display text is often \"LinkedIn\" / \"Github\" without the URL in runs; the real
+    URL only appears in document.xml.rels.
+    """
+    path = Path(docx_path)
+    if not path.is_file():
+        return _empty_contact()
+
+    from pipeline.parser import looks_like_contact_line, normalize_text
+
+    rid_to_target = _load_doc_hyperlink_targets(path)
+    out = _empty_contact()
+    for p in _body_paragraph_elements(path):
+        plain = normalize_text(_paragraph_plain_text(p))
+        if not plain or not looks_like_contact_line(plain):
+            continue
+        for h in p.findall(f".//{{{_W_NS}}}hyperlink"):
+            rid = _hyperlink_rid(h)
+            if not rid:
+                continue
+            raw = (rid_to_target.get(rid) or "").strip()
+            if not raw:
+                continue
+            low = raw.lower()
+            if low.startswith("mailto:"):
+                addr = raw.split(":", 1)[1].strip()
+                if addr:
+                    out["email"] = addr
+            elif "linkedin.com" in low:
+                out["linkedin"] = raw.replace("https://", "").replace("http://", "")
+            elif "github.com" in low:
+                out["github"] = raw.replace("https://", "").replace("http://", "")
+        break
+    return out
 
 
 def _parse_contact_line(text: str) -> dict[str, str]:

@@ -82,6 +82,8 @@ def looks_like_contact_line(text: str) -> bool:
     lower = text.lower()
     return (
         "linkedin" in lower
+        or "github" in lower
+        or "github.com" in lower
         or "@" in text
         or bool(re.search(r"\+?\d[\d\s().-]{7,}", text))
     )
